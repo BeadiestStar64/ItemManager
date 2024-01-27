@@ -1,0 +1,62 @@
+# +--------------------------------------------------------------+
+# |                                                              |
+# |         Welcome to ItemManager config!                         |
+# |                                                              |
+# +--------------------------------------------------------------+
+
+#Manager Setting
+Manager:
+  #Register your own registration details using the anchor. Use Elias for the items.
+  CustomSetting:
+  GlobalSetting:
+    Admin:
+      Provide: true
+      Permission: item-manager.make.admin
+      Setting:
+        AllowOverEnchanting: true
+        AllowCustomEnchantments:
+          Allow: false
+          Plugin: null
+        AutoRecord: true
+    Citizen:
+      Provide: false
+      Permission: item-manager.make.everyone
+      Setting:
+        AllowOverEnchanting: false
+        AllowCustomEnchantments:
+          Allow: false
+          Plugin: null
+        AutoRecord: false
+
+#Recorder Setting
+Recorder:
+  CustomSetting:
+  GlobalSetting:
+    Provide: true
+    Permission:
+      Registration: item-manager.record.registration
+      Edit: item-manager.record.edit
+      Delete: item-manager.record.delete
+
+#Editor Setting
+Editor:
+  CustomSetting:
+  GlobalSetting:
+    Admin:
+      Provide: true
+      Permission: item-manager.edit.admin
+      Setting:
+        AllowOverEnchanting: true
+        AllowCustomEnchantments:
+          Allow: false
+          Plugin: null
+        AutoRecord: false
+    Citizen:
+      Provide: false
+      Permission: item-manager.edit.everyone
+      Setting:
+        AllowOverEnchanting: false
+        AllowCustomEnchantments:
+          Allow: false
+          Plugin: null
+        AutoRecord: false

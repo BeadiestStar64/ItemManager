@@ -1,0 +1,3 @@
+#Console message
+NotFoundCustomEnchantmentPlugin: "§cNot found plugin than provide custom enchantment."
+PermissionDeny: "§c§lInvalid permission! Please check permission plugin or your perms."

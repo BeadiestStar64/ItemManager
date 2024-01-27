@@ -1,0 +1,4 @@
+name: ItemManager
+version: '${project.version}'
+main: com.github.beadieststar64.plugins.itemmanager.ItemManager
+api-version: '1.20'
