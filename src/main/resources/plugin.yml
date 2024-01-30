@@ -2,3 +2,17 @@ name: ItemManager
 version: '${project.version}'
 main: com.github.beadieststar64.plugins.itemmanager.ItemManager
 api-version: '1.20'
+
+commands:
+  manager-mode:
+    aliases:
+      - mm
+      - im-mode
+      - im-mm
+      - imm
+  manager-help:
+    aliases:
+      - mh
+      - im-help
+      - im-mh
+      - imh

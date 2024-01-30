@@ -1,3 +1,11 @@
 #Console message
 NotFoundCustomEnchantmentPlugin: "§cNot found plugin than provide custom enchantment."
 PermissionDeny: "§c§lInvalid permission! Please check permission plugin or your perms."
+SenderNotPlayer: "§c§lThis command cannot be executed by anyone other than the player!"
+
+#Maker message
+# ===== Error =====
+MaterialNotFound: "§c§lMaterial is not found!"
+# ===== Message =====
+MakerSetMaterial: "§6Material set..."
+MakerSetName:

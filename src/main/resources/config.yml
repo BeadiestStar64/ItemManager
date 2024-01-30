@@ -4,9 +4,9 @@
 # |                                                              |
 # +--------------------------------------------------------------+
 
-#Manager Setting
-Manager:
-  #Register your own registration details using the anchor. Use Elias for the items.
+#Maker Setting
+Maker:
+  #Register your own Register details using the anchor. Use Elias for the items.
   CustomSetting:
   GlobalSetting:
     Admin:
@@ -32,11 +32,18 @@ Manager:
 Recorder:
   CustomSetting:
   GlobalSetting:
-    Provide: true
-    Permission:
-      Registration: item-manager.record.registration
-      Edit: item-manager.record.edit
-      Delete: item-manager.record.delete
+    Admin:
+      Provide: true
+      Permission:
+        Register: item-manager.record.Register.admin
+        Edit: item-manager.record.edit.admin
+        Delete: item-manager.record.delete.admin
+    Citizen:
+      Provide: false
+      Permission:
+        Register: item-manager.record.Register.everyone
+        Edit: item-manager.record.edit.everyone
+        Delete: item-manager.record.delete.everyone
 
 #Editor Setting
 Editor:
