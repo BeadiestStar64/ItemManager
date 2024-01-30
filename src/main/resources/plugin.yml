@@ -16,3 +16,6 @@ commands:
       - im-help
       - im-mh
       - imh
+  /maker:
+    aliases:
+      - m

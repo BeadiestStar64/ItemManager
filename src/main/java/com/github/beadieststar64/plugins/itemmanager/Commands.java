@@ -13,10 +13,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class Commands implements CommandExecutor, TabCompleter, Listener {
+public class Commands implements TabExecutor, Listener {
     private final FileConfiguration messenger;
     private static FileConfiguration config;
-    private ItemManager plugin;
+    private final ItemManager plugin;
 
     public Commands(ItemManager plugin) {
         this.plugin = plugin;

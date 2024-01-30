@@ -31,7 +31,14 @@ public final class ItemManager extends JavaPlugin {
             }
         }
 
-        getServer().getPluginManager().registerEvents(new MakerCommand(this), this);
+        //register maker commands
+        final PluginCommand makerCommand = getCommand("/maker");
+        if(makerCommand != null) {
+            makerCommand.setExecutor(new MakerCommand(this));
+            makerCommand.setTabCompleter(new MakerCommand(this));
+        }
+
+        getServer().getPluginManager().registerEvents(new Commands(this), this);
     }
 
     @Override

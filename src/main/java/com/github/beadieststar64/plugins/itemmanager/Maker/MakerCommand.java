@@ -4,22 +4,30 @@ import com.github.beadieststar64.plugins.itemmanager.ItemManager;
 import com.github.beadieststar64.plugins.itemmanager.YamlLoader;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MakerCommand implements Listener {
+public class MakerCommand implements TabExecutor {
 
     static ItemStack item;
     static ItemMeta meta;
@@ -112,6 +120,7 @@ public class MakerCommand implements Listener {
             if(splitMsg.length > 4) {
                 if(splitMsg.length > 5) {
                     //bold等を反映
+                    //ex. #maker name [Name] color [hex] bold under_line
                 }
                 //名前の色を反映
                 splitMsg[4] = list.get(1);
@@ -162,5 +171,197 @@ public class MakerCommand implements Listener {
         }
         item = new ItemStack(material);
         meta = item.getItemMeta();
+    }
+
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
+
+        return false;
+    }
+
+    @Override
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        List<String> result = new ArrayList<>();
+        List<String> argument = new ArrayList<>();
+        List<String> colorList = new ArrayList<>(Arrays.asList(
+                "BLACK",
+                "DARK_BLUE",
+                "DARK_GREEN",
+                "DARK_AQUA",
+                "DARK_RED",
+                "DARK_PURPLE",
+                "DARK_GRAY",
+                "GOLD",
+                "GRAY",
+                "BLUE",
+                "GREEN",
+                "AQUA",
+                "RED",
+                "LIGHT_PURPLE",
+                "YELLOW",
+                "WHITE",
+                "#[Hex code]"
+        ));
+        List<String> colorOptionList = new ArrayList<>(Arrays.asList(
+                "BOLD",
+                "ITALIC",
+                "OBFUSCATED",
+                "RESET",
+                "STRIKETHROUGH",
+                "UNDERLINE"
+        ));
+
+        if(!command.getName().equalsIgnoreCase("/maker")) {
+            return null;
+        }
+        if(args.length == 1) {
+            argument.add("attribute");
+            argument.add("cancel");
+            argument.add("enchanting");
+            argument.add("generate");
+            argument.add("item-flag");
+            argument.add("lore");
+            argument.add("material");
+            argument.add("name");
+
+            for(String str : argument) {
+                if(str.toLowerCase().startsWith(args[0].toLowerCase())) {
+                    result.add(str);
+                }
+            }
+            return result;
+        }
+        if(args.length == 2) {
+            argument.add("edit");
+            argument.add("set");
+            argument.add("remove");
+
+            if(args[0].equalsIgnoreCase("enchanting")) {
+                //メタに対するエンチャントの動作
+                for(String str : argument) {
+                    if(str.toLowerCase().startsWith(args[1])) {
+                        result.add(str);
+                    }
+                }
+                return result;
+            }
+            if(args[0].equalsIgnoreCase("attribute")) {
+                for(String str : argument) {
+                    if(str.toLowerCase().startsWith(args[1])) {
+                        result.add(str);
+                    }
+                }
+                return result;
+            }
+            if(args[0].equalsIgnoreCase("item-flag")) {
+                for(String str : argument) {
+                    if(str.toLowerCase().startsWith(args[1])) {
+                        result.add(str);
+                    }
+                }
+                return result;
+            }
+            if(args[0].equalsIgnoreCase("lore")) {
+                for(String str : argument) {
+                    if(str.toLowerCase().startsWith(args[1])) {
+                        result.add(str);
+                    }
+                }
+                return result;
+            }
+            if(args[0].equalsIgnoreCase("material")) {
+                for(String str : argument) {
+                    if(str.toLowerCase().startsWith(args[1])) {
+                        result.add(str);
+                    }
+                }
+            }
+        }
+        if(args.length == 3) {
+            if(args[0].equalsIgnoreCase("attribute")) {
+                //属性一覧
+                for(Attribute attribute : Attribute.values()) {
+                    argument.add(attribute.getKey().getKey());
+                }
+                for(String str : argument) {
+                    if(str.toLowerCase().startsWith(args[2])) {
+                        result.add(str);
+                    }
+                }
+                return result;
+            }
+
+            if(args[0].equalsIgnoreCase("item-flag")) {
+                //アイテムフラッグ一覧
+                for(ItemFlag flag : ItemFlag.values()) {
+                    argument.add(flag.name().toLowerCase());
+                }
+                for(String str : argument) {
+                    if(str.toLowerCase().startsWith(args[2])) {
+                        result.add(str);
+                    }
+                }
+                return result;
+            }
+            if(args[0].equalsIgnoreCase("lore")) {
+                return new ArrayList<>(List.of("color"));
+            }
+            if(args[0].equalsIgnoreCase("material")) {
+                //マテリアル一覧
+                for(Material m : Material.values()) {
+                    argument.add(m.name().toLowerCase());
+                }
+                for(String str : argument) {
+                    if(str.toLowerCase().startsWith(args[2])) {
+                        result.add(str);
+                    }
+                }
+                return result;
+            }
+            if(args[0].equalsIgnoreCase("name")) {
+                return new ArrayList<>(List.of("color"));
+            }
+            if(args[0].equalsIgnoreCase("enchanting")) {
+                //エンチャント一覧
+                for(Enchantment enchantment : Enchantment.values()) {
+                    argument.add(enchantment.getKey().getKey());
+                }
+                for(String str : argument) {
+                    if(str.toLowerCase().startsWith(args[2].toLowerCase())) {
+                        result.add(str);
+                    }
+                }
+                return result;
+            }
+        }
+        if(args.length == 4) {
+            if(args[2].equalsIgnoreCase("color")) {
+                for(String color : colorList) {
+                    if(color.toLowerCase().startsWith(args[3])) {
+                        result.add(color);
+                    }
+                }
+                return result;
+            }
+            if(args[0].equalsIgnoreCase("enchanting")) {
+                for(int i = 1, l = Enchantment.getByKey(NamespacedKey.minecraft(args[2])).getMaxLevel(); i <= l; i++) {
+                    result.add(String.valueOf(i));
+                }
+                return result;
+            }
+        }
+        if(args.length == 5) {
+            if(colorList.contains(args[3])) {
+                for(String option : colorOptionList) {
+                    if(option.toLowerCase().startsWith(args[4])) {
+                        result.add(option);
+                    }
+                }
+                return result;
+            }
+
+        }
+
+        return new ArrayList<>(List.of(""));
     }
 }
