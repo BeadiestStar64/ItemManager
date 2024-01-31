@@ -11,7 +11,15 @@ Maker:
   GlobalSetting:
     Admin:
       Provide: true
-      Permission: item-manager.make.admin
+      Permission:
+        All: item-manager.maker.admin
+        Basic: item-manager.maker.basic.admin
+        Attribute: item-manager.maker.attribute.admin
+        Enchanting: item-manager.maker.enchanting.admin
+        ItemFlag: item-manager.maker.item-flag.admin
+        Lore: item-manager.maker.lore.admin
+        ColorName: item-manager.maker.name-color.admin
+        AdminItems: item-manager.maker.admin-items.admin
       Setting:
         AllowOverEnchanting: true
         AllowCustomEnchantments:
@@ -20,7 +28,15 @@ Maker:
         AutoRecord: true
     Citizen:
       Provide: false
-      Permission: item-manager.make.everyone
+      Permission:
+        All: item-manager.maker.everyone
+        Basic: item-manager.maker.basic.everyone
+        Attribute: item-manager.maker.attribute.everyone
+        Enchanting: item-manager.maker.enchanting.everyone
+        ItemFlag: item-manager.maker.item-flag.everyone
+        Lore: item-manager.maker.lore.everyone
+        ColorName: item-manager.maker.name-color.everyone
+        AdminItems: item-manager.maker.admin-items.everyone
       Setting:
         AllowOverEnchanting: false
         AllowCustomEnchantments:
@@ -51,7 +67,14 @@ Editor:
   GlobalSetting:
     Admin:
       Provide: true
-      Permission: item-manager.edit.admin
+      Permission:
+        All: item-manager.edit.admin
+        Attribute: item-manager.edit.attribute.admin
+        Basic: item-manager.edit.basic.admin
+        Enchanting: item-manager.edit.enchanting.admin
+        ItemFlag: item-manager.edit.item-flag.admin
+        Lore: item-manager.edit.lore.admin
+        ColorName: item-manager.edit.name-color.admin
       Setting:
         AllowOverEnchanting: true
         AllowCustomEnchantments:
@@ -60,7 +83,14 @@ Editor:
         AutoRecord: false
     Citizen:
       Provide: false
-      Permission: item-manager.edit.everyone
+      Permission:
+        All: item-manager.edit.everyone
+        Attribute: item-manager.edit.attribute.everyone
+        Basic: item-manager.edit.basic.everyone
+        Enchanting: item-manager.edit.enchanting.everyone
+        ItemFlag: item-manager.edit.item-flag.everyone
+        Lore: item-manager.edit.lore.everyone
+        ColorName: item-manager.edit.name-color.everyone
       Setting:
         AllowOverEnchanting: false
         AllowCustomEnchantments:

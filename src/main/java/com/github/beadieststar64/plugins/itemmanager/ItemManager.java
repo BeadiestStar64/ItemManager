@@ -1,7 +1,9 @@
 package com.github.beadieststar64.plugins.itemmanager;
 
 import com.github.beadieststar64.plugins.itemmanager.Maker.MakerCommand;
+import org.bukkit.Material;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class ItemManager extends JavaPlugin {

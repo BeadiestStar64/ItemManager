@@ -1,186 +1,146 @@
 package com.github.beadieststar64.plugins.itemmanager.Maker;
 
 import com.github.beadieststar64.plugins.itemmanager.ItemManager;
+import com.github.beadieststar64.plugins.itemmanager.Manager;
 import com.github.beadieststar64.plugins.itemmanager.YamlLoader;
-import net.md_5.bungee.api.ChatColor;
+import com.google.common.collect.Multimap;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.*;
+import java.util.function.Supplier;
 
-public class MakerCommand implements TabExecutor {
-
-    static ItemStack item;
-    static ItemMeta meta;
-    static Material material;
+public class MakerCommand extends Manager implements TabExecutor {
+    FileConfiguration config;
+    FileConfiguration messenger;
 
     ItemManager plugin;
+    Maker maker;
 
     public MakerCommand(ItemManager plugin) {
         this.plugin = plugin;
+        this.config = new YamlLoader(plugin).getConfig();
+        this.messenger = new YamlLoader(plugin, "message.yml").getConfig();
+        maker = new Maker();
     }
 
-    @EventHandler
-    public void onChat(AsyncPlayerChatEvent event) {
-        Player player = event.getPlayer();
-        String message = event.getMessage();
-        FileConfiguration messenger = new YamlLoader(plugin, "message.yml").getConfig();
-        String[] splitMsg;
-        if(message.contains("#maker")) {
-            splitMsg = message.split(" ");
-
-            if(splitMsg.length < 2) {
-                return;
-            }
-
-            event.setCancelled(true);
-
-            switch (splitMsg[1]) {
-                case "material" -> {
-                    try {
-                        material = Material.valueOf(splitMsg[2].toUpperCase());
-                        item = new ItemStack(material);
-                        meta = item.getItemMeta();
-
-                        player.sendMessage(Objects.requireNonNull(messenger.getString("MakerSetMaterial")));
-                    }catch (Exception e) {
-                        player.sendMessage(Objects.requireNonNull(messenger.getString("MaterialNotFound")));
-                    }
-                }
-                case "name" -> {
-                    handleNameCommand(message);
-
-                }
-                case "enchanting" -> {
-
-                }
-                case "attribute" -> {
-
-                }
-                case "item-flag" -> {
-
-                }
-                case "generate" -> {
-                    item.setItemMeta(meta);
-                    player.getInventory().addItem(item);
-                    player.updateInventory();
-                    player.sendMessage("生成に成功しました");
-                    item = null;
-                    meta = null;
-                }
-                case "cancel" -> {
-
-                }
-            }
-        }
-    }
-
-    // 名前を処理するメソッド
-    private void handleNameCommand(String message) {
-        String[] splitMsg;
-
-        if (meta == null) {
-            setup();
-        }
-
-        Pattern masterP = Pattern.compile("(?<=\\[).*?(?=])");
-        Matcher matcherP = masterP.matcher(message);
-        List<String> list = new ArrayList<>();
-        List<String> optionList = new ArrayList<>();
-
-        while (matcherP.find()) {
-            String data = message.substring(matcherP.start(), matcherP.end());
-            list.add(data);
-            message = message.replace(data, "A");
-            message = message.replaceFirst("[\\[]A[]]", "");
-            matcherP = masterP.matcher(message);
-        }
-
-        splitMsg = message.split(" ");
-        if(splitMsg.length > 2) {
-            if(splitMsg.length > 4) {
-                if(splitMsg.length > 5) {
-                    //bold等を反映
-                    //ex. #maker name [Name] color [hex] bold under_line
-                }
-                //名前の色を反映
-                splitMsg[4] = list.get(1);
-                if (splitMsg[3].equalsIgnoreCase("color")) {
-
-                }
-            }
-            //名前を反映
-            splitMsg[2] = list.get(0);
-        }
-
-
-
-        StringBuilder displayNameBuilder = new StringBuilder();
-        displayNameBuilder.append(list.get(0));
-
-        if (!optionList.isEmpty()) {
-            for (String s : optionList) {
-                displayNameBuilder.append(s);
-            }
-        }
-
-        displayNameBuilder.append(list.get(0).replaceAll("[\\[\\]]", ""));
-
-        meta.setDisplayName(displayNameBuilder.toString());
-    }
-
-    // 色を処理するメソッド
-    private List<String> handleColorCommand(List<String> list) {
-        Pattern colorP = Pattern.compile("#[a-fA-F0-9]{6}");
-        Matcher colorM = colorP.matcher(list.get(1));
-        List<String> colorL = new ArrayList<>();
-
-        int i = 0;
-        while (colorM.find()) {
-            String color = list.get(1).substring(colorM.start(), colorM.end());
-            String str = list.get(1).replace(color, ChatColor.of(color) + "");
-            colorL.set(i, ChatColor.translateAlternateColorCodes('&', str));
-            colorM = colorP.matcher(list.get(1));
-        }
-        return colorL;
-    }
-
-
-    private void setup() {
-        if(material == null) {
-            return;
-        }
-        item = new ItemStack(material);
-        meta = item.getItemMeta();
-    }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String str, @NotNull String[] args) {
+        if(!(sender instanceof Player)) {
+            sender.sendMessage(Objects.requireNonNull(messenger.getString("SenderNotPlayer")));
+            return true;
+        }
+        Player player = (Player) sender;
 
+        if(!command.getName().equalsIgnoreCase("/maker")) {
+            return true;
+        }
+
+        if(args[0].equalsIgnoreCase("attribute")) {
+            try {
+                Multimap<Attribute, AttributeModifier> map = maker.meta.get(player.getUniqueId()).getAttributeModifiers();
+                switch(args[1].toLowerCase()) {
+                    case "edit" -> {
+
+
+                    }
+                    case "remove" -> {
+                        if(map == null) {
+                            //セットアップ開始
+                            if(maker.meta == null) {
+                                maker.meta = new HashMap<>();
+                            }
+                        }
+                        try {
+                            if(args.length != 3) {
+                                player.sendMessage(String.format("%s: %s", messenger.getString("MakerInvalidCommand"), "//maker attribute <arg1(String)> <namespace> <arg2(Operation)> <amount(Double)> <uuid> <slot(Equipment)>"));
+                                return true;
+                            }
+                            maker.meta.get(player.getUniqueId()).removeAttributeModifier(Attribute.valueOf(args[2]));
+                            return true;
+                        }catch (IllegalArgumentException e) {
+                            player.sendMessage(String.format("%s: %s", messenger.getString("MakerInvalidCommand"), "//maker attribute <arg1(String)> <namespace> <arg2(Operation)> <amount(Double)> <uuid> <slot(Equipment)>"));
+                            return true;
+                        }catch (NullPointerException e) {
+                            player.sendMessage(Objects.requireNonNull(messenger.getString("MakerArgumentIsNull")));
+                            return true;
+                        }
+                    }
+                    case "set" -> {
+                        try {
+                            UUID uuid;
+                            ArrayList<EquipmentSlot> slotsList = new ArrayList<>();
+                            if(args.length == 6) {
+                                //すべてのスロットに属性セット
+                                uuid = getUuid(args[5]);
+                                slotsList.addAll(Arrays.asList(EquipmentSlot.values()));
+                            }else if(args.length == 7) {
+                                uuid = getUuid(args[5]);
+                                slotsList.add(EquipmentSlot.valueOf(args[6].toUpperCase()));
+                            }else{
+                                player.sendMessage(String.format("%s: %s", messenger.getString("MakerInvalidCommand"), "//maker attribute <arg1(String)> <namespace> <arg2(Operation)> <amount(Double)> <uuid> <slot(Equipment)>"));
+                                return true;
+                            }
+
+                            //duplication check
+                            if(maker.meta.get(player.getUniqueId()).getAttributeModifiers().containsKey(Attribute.valueOf(args[2].toUpperCase()))) {
+                                player.sendMessage(String.format("%s", messenger.getString("MakerAlreadyInclude")).replaceAll("<ARGUMENT>", Objects.requireNonNull(messenger.getString("Attribute"))));
+                                return true;
+                            }
+
+                            for(EquipmentSlot slot : slotsList) {
+                                maker.meta.get(player.getUniqueId()).addAttributeModifier(Attribute.valueOf(args[2].toUpperCase()), new AttributeModifier(uuid, args[2], Double.parseDouble(args[4]), AttributeModifier.Operation.valueOf(args[3].toUpperCase()), slot));
+                            }
+                        }catch (IllegalArgumentException e) {
+                            player.sendMessage(String.format("%s: %s", messenger.getString("MakerInvalidCommand"), "//maker attribute <arg1(String)> <namespace> <arg2(Operation)> <amount(Double)> <uuid> <slot(Equipment)>"));
+                            return true;
+                        }catch (NullPointerException e) {
+                            if(maker.meta == null) {
+                                player.sendMessage(Objects.requireNonNull(messenger.getString("MakerArgumentIsNull")).replaceAll("<AUGUEMENT>", "meta"));
+
+                            }
+                            player.sendMessage(Objects.requireNonNull(messenger.getString("MakerArgumentIsNull")).replaceAll("<AUGUEMENT>", "argument"));
+                            return true;
+                        }
+                    }
+                }
+            }catch (Exception e) {
+                player.sendMessage(Objects.requireNonNull(messenger.getString("MakerArgumentIsNull")));
+            }
+        }
         return false;
+    }
+
+    private UUID getUuid(String arg) {
+        if(!arg.equalsIgnoreCase("random-uuid")) {
+            return UUID.fromString(arg);
+        }
+        return UUID.randomUUID();
     }
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+
+        if(!(sender instanceof Player)) {
+            return null;
+        }
+
+        Player player = (Player) sender;
+
         List<String> result = new ArrayList<>();
         List<String> argument = new ArrayList<>();
         List<String> colorList = new ArrayList<>(Arrays.asList(
@@ -214,154 +174,295 @@ public class MakerCommand implements TabExecutor {
         if(!command.getName().equalsIgnoreCase("/maker")) {
             return null;
         }
-        if(args.length == 1) {
-            argument.add("attribute");
-            argument.add("cancel");
-            argument.add("enchanting");
-            argument.add("generate");
-            argument.add("item-flag");
-            argument.add("lore");
-            argument.add("material");
-            argument.add("name");
+        try {
+            if (args.length == 1) {
+                argument.add("attribute");
+                argument.add("cancel");
+                argument.add("enchanting");
+                argument.add("generate");
+                argument.add("item_flag");
+                argument.add("lore");
+                argument.add("material");
+                argument.add("name");
 
-            for(String str : argument) {
-                if(str.toLowerCase().startsWith(args[0].toLowerCase())) {
-                    result.add(str);
+                for (String str : argument) {
+                    if((!player.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Citizen.Permission." + ManagerArg.valueOf(str.toUpperCase())))))) {
+                        continue;
+                    }
+                    if (str.toLowerCase().startsWith(args[0].toLowerCase())) {
+                        result.add(str);
+                    }
                 }
+                return result;
             }
-            return result;
-        }
-        if(args.length == 2) {
-            argument.add("edit");
-            argument.add("set");
-            argument.add("remove");
+            if (args.length == 2) {
+                argument.add("edit");
+                argument.add("set");
+                argument.add("remove");
 
-            if(args[0].equalsIgnoreCase("enchanting")) {
-                //メタに対するエンチャントの動作
-                for(String str : argument) {
-                    if(str.toLowerCase().startsWith(args[1])) {
-                        result.add(str);
+                if (args[0].equalsIgnoreCase("enchanting")) {
+                    if(tabPermissionCheck(sender, "Enchanting")) {
+                        return null;
                     }
-                }
-                return result;
-            }
-            if(args[0].equalsIgnoreCase("attribute")) {
-                for(String str : argument) {
-                    if(str.toLowerCase().startsWith(args[1])) {
-                        result.add(str);
+                    for (String str : argument) {
+                        if (str.toLowerCase().startsWith(args[1])) {
+                            result.add(str);
+                        }
                     }
+                    return result;
                 }
-                return result;
-            }
-            if(args[0].equalsIgnoreCase("item-flag")) {
-                for(String str : argument) {
-                    if(str.toLowerCase().startsWith(args[1])) {
-                        result.add(str);
+                if (args[0].equalsIgnoreCase("attribute")) {
+                    if(tabPermissionCheck(sender, "Attribute")) {
+                        return null;
                     }
-                }
-                return result;
-            }
-            if(args[0].equalsIgnoreCase("lore")) {
-                for(String str : argument) {
-                    if(str.toLowerCase().startsWith(args[1])) {
-                        result.add(str);
+                    for (String str : argument) {
+                        if (str.toLowerCase().startsWith(args[1])) {
+                            result.add(str);
+                        }
                     }
+                    return result;
                 }
-                return result;
-            }
-            if(args[0].equalsIgnoreCase("material")) {
-                for(String str : argument) {
-                    if(str.toLowerCase().startsWith(args[1])) {
-                        result.add(str);
+                if (args[0].equalsIgnoreCase("iem_flag")) {
+                    if(tabPermissionCheck(sender, "ItemFlag")) {
+                        return null;
                     }
-                }
-            }
-        }
-        if(args.length == 3) {
-            if(args[0].equalsIgnoreCase("attribute")) {
-                //属性一覧
-                for(Attribute attribute : Attribute.values()) {
-                    argument.add(attribute.getKey().getKey());
-                }
-                for(String str : argument) {
-                    if(str.toLowerCase().startsWith(args[2])) {
-                        result.add(str);
+                    for (String str : argument) {
+                        if (str.toLowerCase().startsWith(args[1])) {
+                            result.add(str);
+                        }
                     }
+                    return result;
                 }
-                return result;
+                if (args[0].equalsIgnoreCase("lore")) {
+                    if(tabPermissionCheck(sender, "Lore")) {
+                        return null;
+                    }
+                    for (String str : argument) {
+                        if (str.toLowerCase().startsWith(args[1])) {
+                            result.add(str);
+                        }
+                    }
+                    return result;
+                }
+                if (args[0].equalsIgnoreCase("material")) {
+                    if(tabPermissionCheck(sender, "AdminItems")) {
+                        return null;
+                    }
+                    for (String str : argument) {
+                        if (str.toLowerCase().startsWith(args[1])) {
+                            result.add(str);
+                        }
+                    }
+                    return result;
+                }
             }
+            if (args.length == 3) {
+                if (args[0].equalsIgnoreCase("attribute")) {
+                    //属性一覧
+                    if(tabPermissionCheck(sender, "Attribute")) {
+                        return null;
+                    }
+                    if(args[1].equalsIgnoreCase("set")){
+                        for (Attribute attribute : Attribute.values()) {
+                            argument.add(attribute.getKey().getKey());
+                        }
+                        for (String str : argument) {
+                            if (str.toLowerCase().startsWith(args[2])) {
+                                result.add(str);
+                            }
+                        }
+                    }else{
+                        try {
+                            for(Attribute attribute : maker.meta.get(player.getUniqueId()).getAttributeModifiers().asMap().keySet()) {
+                                argument.add(attribute.getKey().getKey());
+                            }
+                            for(String str : argument) {
+                                if(str.toLowerCase().startsWith(args[2])) {
+                                    result.add(str);
+                                }
+                            }
+                        }catch(Exception e) {
+                            result.add("");
+                        }
+                    }
+                    return result;
+                }
 
-            if(args[0].equalsIgnoreCase("item-flag")) {
-                //アイテムフラッグ一覧
-                for(ItemFlag flag : ItemFlag.values()) {
-                    argument.add(flag.name().toLowerCase());
-                }
-                for(String str : argument) {
-                    if(str.toLowerCase().startsWith(args[2])) {
-                        result.add(str);
+                if (args[0].equalsIgnoreCase("iem_flag")) {
+                    //アイテムフラッグ一覧
+                    if(tabPermissionCheck(sender, "ItemFlag")) {
+                        return null;
                     }
-                }
-                return result;
-            }
-            if(args[0].equalsIgnoreCase("lore")) {
-                return new ArrayList<>(List.of("color"));
-            }
-            if(args[0].equalsIgnoreCase("material")) {
-                //マテリアル一覧
-                for(Material m : Material.values()) {
-                    argument.add(m.name().toLowerCase());
-                }
-                for(String str : argument) {
-                    if(str.toLowerCase().startsWith(args[2])) {
-                        result.add(str);
+                    for (ItemFlag flag : ItemFlag.values()) {
+                        argument.add(flag.name().toLowerCase());
                     }
-                }
-                return result;
-            }
-            if(args[0].equalsIgnoreCase("name")) {
-                return new ArrayList<>(List.of("color"));
-            }
-            if(args[0].equalsIgnoreCase("enchanting")) {
-                //エンチャント一覧
-                for(Enchantment enchantment : Enchantment.values()) {
-                    argument.add(enchantment.getKey().getKey());
-                }
-                for(String str : argument) {
-                    if(str.toLowerCase().startsWith(args[2].toLowerCase())) {
-                        result.add(str);
+                    for (String str : argument) {
+                        if (str.toLowerCase().startsWith(args[2])) {
+                            result.add(str);
+                        }
                     }
+                    return result;
                 }
-                return result;
+                if (args[0].equalsIgnoreCase("material")) {
+                    //マテリアル一覧
+                    if(tabPermissionCheck(sender, "AdminItems")) {
+                        return null;
+                    }
+                    for (Material m : Material.values()) {
+                        if(checkSpecialMaterial(m)) {
+                            if(!sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Admin.Permission.All")))) {
+                                if(!sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Admin.Permission.AdminItems")))) {
+                                    continue;
+                                }
+                            }
+                        }
+                        argument.add(m.name().toLowerCase());
+                    }
+                    for (String str : argument) {
+                        if (str.toLowerCase().startsWith(args[2])) {
+                            result.add(str);
+                        }
+                    }
+                    return result;
+                }
+                if (args[0].equalsIgnoreCase("name")) {
+                    if(tabPermissionCheck(sender, "ColorName")) {
+                        return null;
+                    }
+                    return new ArrayList<>(List.of("color"));
+                }
+                if (args[0].equalsIgnoreCase("enchanting")) {
+                    //エンチャント一覧
+                    if(tabPermissionCheck(sender, "Enchanting")) {
+                        return null;
+                    }
+                    for (Enchantment enchantment : Enchantment.values()) {
+                        argument.add(enchantment.getKey().getKey().toLowerCase());
+                    }
+                    for (String str : argument) {
+                        if (str.toLowerCase().startsWith(args[2].toLowerCase())) {
+                            result.add(str);
+                        }
+                    }
+                    return result;
+                }
             }
+            if (args.length == 4) {
+                if (args[2].equalsIgnoreCase("color")) {
+                    if(tabPermissionCheck(sender, "ColorName")) {
+                        return null;
+                    }
+                    for (String color : colorList) {
+                        if (color.toLowerCase().startsWith(args[3])) {
+                            result.add(color.toLowerCase());
+                        }
+                    }
+                    return result;
+                }
+                if (args[0].equalsIgnoreCase("enchanting")) {
+                    if(tabPermissionCheck(sender, "Enchanting")) {
+                        return null;
+                    }
+                    for (int i = 1, l = Enchantment.getByKey(NamespacedKey.minecraft(args[2])).getMaxLevel(); i <= l; i++) {
+                        result.add(String.valueOf(i));
+                    }
+                    return result;
+                }
+                if(args[0].equalsIgnoreCase("attribute")) {
+                    if(tabPermissionCheck(sender, "Attribute")) {
+                        return null;
+                    }
+                    if(args[1].equalsIgnoreCase("set")) {
+                        for(AttributeModifier.Operation operation : AttributeModifier.Operation.values()) {
+                            argument.add(operation.name().toLowerCase());
+                        }
+                        for(String str : argument) {
+                            if(str.toLowerCase().startsWith(args[3])) {
+                                result.add(str);
+                            }
+                        }
+                    }else{
+                        result.add("");
+                    }
+                    return result;
+                }
+                if (args[0].equalsIgnoreCase("lore")) {
+                    if(tabPermissionCheck(sender, "ColorName")) {
+                        return null;
+                    }
+                    return new ArrayList<>(List.of("color"));
+                }
+            }
+            if (args.length == 5) {
+                if (args[3].equalsIgnoreCase("color")) {
+                    if(tabPermissionCheck(sender, "ColorName")) {
+                        return null;
+                    }
+                    for (String color : colorList) {
+                        if (color.toLowerCase().startsWith(args[4])) {
+                            result.add(color.toLowerCase());
+                        }
+                    }
+                    return result;
+                }
+            }
+            if(args.length == 6) {
+                if(colorList.contains(args[4])) {
+                    if(tabPermissionCheck(sender, "Attribute")) {
+                        return null;
+                    }
+                    if(args[1].equalsIgnoreCase("set")) {
+                        for (String option : colorOptionList) {
+                            if (option.toLowerCase().startsWith(args[5])) {
+                                result.add(option.toLowerCase());
+                            }
+                        }
+                    }else{
+                        result.add("");
+                    }
+                    return result;
+                }
+                if(args[0].equalsIgnoreCase("attribute")) {
+                    result.add("random-uuid");
+                    return result;
+                }
+            }
+            if(args.length == 7) {
+                if(args[0].equalsIgnoreCase("attribute")) {
+                    if(tabPermissionCheck(sender, "Attribute")) {
+                        return null;
+                    }
+                    if(args[1].equalsIgnoreCase("set")) {
+                        for(EquipmentSlot slot : EquipmentSlot.values()) {
+                            argument.add(slot.name().toLowerCase());
+                        }
+                        for(String str : argument) {
+                            if(str.toLowerCase().startsWith(args[6])) {
+                                result.add(str);
+                            }
+                        }
+                    }else{
+                        result.add("");
+                    }
+                    return result;
+                }
+            }
+        }catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        if(args.length == 4) {
-            if(args[2].equalsIgnoreCase("color")) {
-                for(String color : colorList) {
-                    if(color.toLowerCase().startsWith(args[3])) {
-                        result.add(color);
-                    }
-                }
-                return result;
-            }
-            if(args[0].equalsIgnoreCase("enchanting")) {
-                for(int i = 1, l = Enchantment.getByKey(NamespacedKey.minecraft(args[2])).getMaxLevel(); i <= l; i++) {
-                    result.add(String.valueOf(i));
-                }
-                return result;
-            }
-        }
-        if(args.length == 5) {
-            if(colorList.contains(args[3])) {
-                for(String option : colorOptionList) {
-                    if(option.toLowerCase().startsWith(args[4])) {
-                        result.add(option);
-                    }
-                }
-                return result;
-            }
+        return result;
+    }
 
+    private boolean tabPermissionCheck(CommandSender sender, String argType) {
+        if(sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Admin.Permission.All")))) {
+            return false;
         }
-
-        return new ArrayList<>(List.of(""));
+        if(sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Admin.Permission." + argType)))) {
+            return false;
+        }
+        if(sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Citizen.Permission.All")))) {
+            return false;
+        }
+        return !sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Citizen.Permission." + argType)));
     }
 }
