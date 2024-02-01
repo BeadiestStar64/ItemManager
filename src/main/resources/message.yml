@@ -14,6 +14,7 @@ Material: material
 MaterialNotFound: "§c§lMaterial is not found!"
 MakerInvalidCommand: "§c§lInvalid command! Please enter as follows"
 MakerArgumentIsNull: "§c§lThe Specified <ARGUMENT> is null!"
+MakerMaterialIsNull: "§c§lMaterial is null!\n§c§rPlease specified the material as the next command: //maker material set <Material>"
 MakerAlreadyInclude: "§c§lIts <ARGUMENT> are already included! Please delete the specified <ARGUMENT>."
 # ===== Message =====
 MakerSetMaterial: "§6Material set..."

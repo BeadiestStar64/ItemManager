@@ -1,10 +1,10 @@
 package com.github.beadieststar64.plugins.itemmanager.Maker;
 
 import com.github.beadieststar64.plugins.itemmanager.ItemManager;
-import com.github.beadieststar64.plugins.itemmanager.Manager;
+import com.github.beadieststar64.plugins.itemmanager.Manager.Manager;
+import com.github.beadieststar64.plugins.itemmanager.Manager.NotAllowPermissionException;
 import com.github.beadieststar64.plugins.itemmanager.YamlLoader;
 import com.google.common.collect.Multimap;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -12,42 +12,56 @@ import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Supplier;
 
 public class MakerCommand extends Manager implements TabExecutor {
-    FileConfiguration config;
-    FileConfiguration messenger;
+    YamlLoader config;
+    YamlLoader messenger;
 
     ItemManager plugin;
     Maker maker;
 
     public MakerCommand(ItemManager plugin) {
         this.plugin = plugin;
-        this.config = new YamlLoader(plugin).getConfig();
-        this.messenger = new YamlLoader(plugin, "message.yml").getConfig();
+        this.config = new YamlLoader(plugin);
+        this.messenger = new YamlLoader(plugin, "message.yml");
         maker = new Maker();
     }
 
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String str, @NotNull String[] args) {
-        if(!(sender instanceof Player)) {
-            sender.sendMessage(Objects.requireNonNull(messenger.getString("SenderNotPlayer")));
+        if(!(sender instanceof Player player)) {
+            sender.sendMessage(messenger.getString("SenderNotPlayer"));
             return true;
         }
-        Player player = (Player) sender;
 
         if(!command.getName().equalsIgnoreCase("/maker")) {
             return true;
+        }
+
+        if(maker.meta == null || maker.meta.isEmpty()) {
+            //メタ情報がない
+            if(maker.item == null || maker.item.isEmpty()) {
+                //ItemStackがnull
+                if(maker.material == null || maker.material.isEmpty()) {
+                    //Materialがnull
+                    player.sendMessage(messenger.getString("MakerMaterialIsNull"));
+                    return true;
+                }
+                maker.item = new HashMap<>();
+                maker.item.put(player.getUniqueId(), new ItemStack(maker.material.get(player.getUniqueId())));
+            }
+            maker.meta = new HashMap<>();
+            maker.meta.put(player.getUniqueId(), maker.item.get(player.getUniqueId()).getItemMeta());
         }
 
         if(args[0].equalsIgnoreCase("attribute")) {
@@ -60,7 +74,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                     }
                     case "remove" -> {
                         if(map == null) {
-                            //セットアップ開始
+                            //属性がない
                             if(maker.meta == null) {
                                 maker.meta = new HashMap<>();
                             }
@@ -76,7 +90,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                             player.sendMessage(String.format("%s: %s", messenger.getString("MakerInvalidCommand"), "//maker attribute <arg1(String)> <namespace> <arg2(Operation)> <amount(Double)> <uuid> <slot(Equipment)>"));
                             return true;
                         }catch (NullPointerException e) {
-                            player.sendMessage(Objects.requireNonNull(messenger.getString("MakerArgumentIsNull")));
+                            player.sendMessage(messenger.getString("MakerArgumentIsNull"));
                             return true;
                         }
                     }
@@ -98,7 +112,7 @@ public class MakerCommand extends Manager implements TabExecutor {
 
                             //duplication check
                             if(maker.meta.get(player.getUniqueId()).getAttributeModifiers().containsKey(Attribute.valueOf(args[2].toUpperCase()))) {
-                                player.sendMessage(String.format("%s", messenger.getString("MakerAlreadyInclude")).replaceAll("<ARGUMENT>", Objects.requireNonNull(messenger.getString("Attribute"))));
+                                player.sendMessage(String.format("%s", messenger.getString("MakerAlreadyInclude")).replaceAll("<ARGUMENT>", messenger.getString("Attribute")));
                                 return true;
                             }
 
@@ -110,18 +124,28 @@ public class MakerCommand extends Manager implements TabExecutor {
                             return true;
                         }catch (NullPointerException e) {
                             if(maker.meta == null) {
-                                player.sendMessage(Objects.requireNonNull(messenger.getString("MakerArgumentIsNull")).replaceAll("<AUGUEMENT>", "meta"));
+                                player.sendMessage(messenger.getString("MakerArgumentIsNull").replaceAll("<AUGUEMENT>", "meta"));
 
                             }
-                            player.sendMessage(Objects.requireNonNull(messenger.getString("MakerArgumentIsNull")).replaceAll("<AUGUEMENT>", "argument"));
+                            player.sendMessage(messenger.getString("MakerArgumentIsNull").replaceAll("<AUGUEMENT>", "argument"));
                             return true;
                         }
                     }
                 }
             }catch (Exception e) {
-                player.sendMessage(Objects.requireNonNull(messenger.getString("MakerArgumentIsNull")));
+                player.sendMessage(messenger.getString("MakerArgumentIsNull"));
+            }
+        }else if(args[0].equalsIgnoreCase("material")) {
+            try {
+            }catch (IllegalArgumentException e) {
+                player.sendMessage(String.format("%s: %s", messenger.getString("MakerInvalidCommand"), "//maker material <arg1(String)>"));
+                return true;
+            }catch (NotAllowPermissionException e) {
+                throw new NotAllowPermissionException(e);
             }
         }
+
+
         return false;
     }
 
@@ -186,7 +210,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                 argument.add("name");
 
                 for (String str : argument) {
-                    if((!player.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Citizen.Permission." + ManagerArg.valueOf(str.toUpperCase())))))) {
+                    if((!player.hasPermission(config.getString("Maker.GlobalSetting.Citizen.Permission." + ManagerArg.valueOf(str.toUpperCase()))))) {
                         continue;
                     }
                     if (str.toLowerCase().startsWith(args[0].toLowerCase())) {
@@ -310,8 +334,8 @@ public class MakerCommand extends Manager implements TabExecutor {
                     }
                     for (Material m : Material.values()) {
                         if(checkSpecialMaterial(m)) {
-                            if(!sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Admin.Permission.All")))) {
-                                if(!sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Admin.Permission.AdminItems")))) {
+                            if(!sender.hasPermission(config.getString("Maker.GlobalSetting.Admin.Permission.All"))) {
+                                if(!sender.hasPermission(config.getString("Maker.GlobalSetting.Admin.Permission.AdminItems"))) {
                                     continue;
                                 }
                             }
@@ -454,15 +478,15 @@ public class MakerCommand extends Manager implements TabExecutor {
     }
 
     private boolean tabPermissionCheck(CommandSender sender, String argType) {
-        if(sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Admin.Permission.All")))) {
+        if(sender.hasPermission(config.getString("Maker.GlobalSetting.Admin.Permission.All"))) {
             return false;
         }
-        if(sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Admin.Permission." + argType)))) {
+        if(sender.hasPermission(config.getString("Maker.GlobalSetting.Admin.Permission." + argType))) {
             return false;
         }
-        if(sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Citizen.Permission.All")))) {
+        if(sender.hasPermission(config.getString("Maker.GlobalSetting.Citizen.Permission.All"))) {
             return false;
         }
-        return !sender.hasPermission(Objects.requireNonNull(config.getString("Maker.GlobalSetting.Citizen.Permission." + argType)));
+        return !sender.hasPermission(config.getString("Maker.GlobalSetting.Citizen.Permission." + argType));
     }
 }

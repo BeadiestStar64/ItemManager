@@ -6,6 +6,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import java.util.UUID;
 public class Maker implements Listener {
 
     Map<UUID, Material> material = new HashMap<>();
+    Map<UUID, ItemStack> item = new HashMap<>();
     Map<UUID, ItemMeta> meta = new HashMap<>();
     Map<UUID, String> name = new HashMap<>();
 
@@ -22,6 +24,7 @@ public class Maker implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         material.put(player.getUniqueId(), null);
+        item.put(player.getUniqueId(), null);
         meta.put(player.getUniqueId(), null);
         name.put(player.getUniqueId(), null);
     }
@@ -30,6 +33,7 @@ public class Maker implements Listener {
     public void onLeave(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         material.remove(player.getUniqueId());
+        item.remove(player.getUniqueId());
         meta.remove(player.getUniqueId());
         name.remove(player.getUniqueId());
     }

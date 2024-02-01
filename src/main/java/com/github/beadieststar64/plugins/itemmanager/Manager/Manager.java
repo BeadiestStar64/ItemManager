@@ -1,4 +1,4 @@
-package com.github.beadieststar64.plugins.itemmanager;
+package com.github.beadieststar64.plugins.itemmanager.Manager;
 
 import org.bukkit.Material;
 

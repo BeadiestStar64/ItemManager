@@ -2,6 +2,7 @@ package com.github.beadieststar64.plugins.itemmanager;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.InputStream;
@@ -56,5 +57,16 @@ public class YamlLoader {
             reloadYaml();
         }
         return yaml;
+    }
+
+    public @NotNull String getString(String key) {
+        if(yaml == null) {
+            reloadYaml();
+        }
+        String result = yaml.getString(key);
+        if(result == null) {
+            return "null";
+        }
+        return result;
     }
 }
