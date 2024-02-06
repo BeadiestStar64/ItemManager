@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 public abstract class Manager {
 
-    ArrayList<Material> specialMaterial = new ArrayList<>(
+    public static ArrayList<Material> specialMaterial = new ArrayList<>(
             Arrays.asList(
                     Material.PETRIFIED_OAK_SLAB,
                     Material.COMMAND_BLOCK,

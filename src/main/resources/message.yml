@@ -1,21 +1,23 @@
 # ===== Console message =====
 NotFoundCustomEnchantmentPlugin: "§cNot found plugin than provide custom enchantment."
-PermissionDeny: "§c§lInvalid permission! Please check permission plugin or your perms."
+PermissionDeny: "§c§lInvalid permission!\n§r§cPlease check permission plugin or your perms."
 SenderNotPlayer: "§c§lThis command cannot be executed by anyone other than the player!"
-
+NotProvide: "§c§lThis feature is not provided."
 # ===== Arguments =====
 Attribute: attribute
 Enchantment: enchantment
 ItemFlag: item flag
 Material: material
+EnchantmentLevel: level
+Duplication: duplicate
 
 # ===== Maker message ======
 # ===== Error =====
 MaterialNotFound: "§c§lMaterial is not found!"
 MakerInvalidCommand: "§c§lInvalid command! Please enter as follows"
-MakerArgumentIsNull: "§c§lThe Specified <ARGUMENT> is null!"
+MakerIllegalArgument: "§c§lInvalid argument!\n§r§cPlease enter as follows"
+MakerArgumentIsNull: "§c§l<ARGUMENT> is null!\n§r§cPlease specified the <ARGUMENT> as the next command."
 MakerMaterialIsNull: "§c§lMaterial is null!\n§c§rPlease specified the material as the next command: //maker material set <Material>"
-MakerAlreadyInclude: "§c§lIts <ARGUMENT> are already included! Please delete the specified <ARGUMENT>."
+MakerAlreadyInclude: "§c§lIts <ARGUMENT> are already included!\n§r§cPlease delete the specified <ARGUMENT>."
 # ===== Message =====
-MakerSetMaterial: "§6Material set..."
-MakerSetAttribute: ""
+MakerSet: "§6<ARGUMENT> set..."

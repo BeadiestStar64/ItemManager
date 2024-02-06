@@ -1,10 +1,14 @@
 package com.github.beadieststar64.plugins.itemmanager.Maker;
 
+import com.github.beadieststar64.plugins.itemmanager.ConfigMenu;
 import com.github.beadieststar64.plugins.itemmanager.ItemManager;
+import com.github.beadieststar64.plugins.itemmanager.Manager.AlreadyIncludeException;
 import com.github.beadieststar64.plugins.itemmanager.Manager.Manager;
 import com.github.beadieststar64.plugins.itemmanager.Manager.NotAllowPermissionException;
+import com.github.beadieststar64.plugins.itemmanager.Manager.NotProvideException;
 import com.github.beadieststar64.plugins.itemmanager.YamlLoader;
 import com.google.common.collect.Multimap;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -48,104 +52,118 @@ public class MakerCommand extends Manager implements TabExecutor {
             return true;
         }
 
-        if(maker.meta == null || maker.meta.isEmpty()) {
-            //メタ情報がない
-            if(maker.item == null || maker.item.isEmpty()) {
-                //ItemStackがnull
-                if(maker.material == null || maker.material.isEmpty()) {
-                    //Materialがnull
-                    player.sendMessage(messenger.getString("MakerMaterialIsNull"));
-                    return true;
-                }
-                maker.item = new HashMap<>();
-                maker.item.put(player.getUniqueId(), new ItemStack(maker.material.get(player.getUniqueId())));
+        try {
+            //Basic Permission check
+            if(permissionCheck(player, "Basic")) {
+                throw new NotAllowPermissionException();
             }
-            maker.meta = new HashMap<>();
-            maker.meta.put(player.getUniqueId(), maker.item.get(player.getUniqueId()).getItemMeta());
-        }
 
-        if(args[0].equalsIgnoreCase("attribute")) {
-            try {
-                Multimap<Attribute, AttributeModifier> map = maker.meta.get(player.getUniqueId()).getAttributeModifiers();
-                switch(args[1].toLowerCase()) {
+            if(args[0].equalsIgnoreCase("attribute")) {
+                switch(args[1]) {
                     case "edit" -> {
-
 
                     }
                     case "remove" -> {
-                        if(map == null) {
-                            //属性がない
-                            if(maker.meta == null) {
-                                maker.meta = new HashMap<>();
-                            }
-                        }
-                        try {
-                            if(args.length != 3) {
-                                player.sendMessage(String.format("%s: %s", messenger.getString("MakerInvalidCommand"), "//maker attribute <arg1(String)> <namespace> <arg2(Operation)> <amount(Double)> <uuid> <slot(Equipment)>"));
-                                return true;
-                            }
-                            maker.meta.get(player.getUniqueId()).removeAttributeModifier(Attribute.valueOf(args[2]));
-                            return true;
-                        }catch (IllegalArgumentException e) {
-                            player.sendMessage(String.format("%s: %s", messenger.getString("MakerInvalidCommand"), "//maker attribute <arg1(String)> <namespace> <arg2(Operation)> <amount(Double)> <uuid> <slot(Equipment)>"));
-                            return true;
-                        }catch (NullPointerException e) {
-                            player.sendMessage(messenger.getString("MakerArgumentIsNull"));
-                            return true;
-                        }
+
                     }
                     case "set" -> {
-                        try {
-                            UUID uuid;
-                            ArrayList<EquipmentSlot> slotsList = new ArrayList<>();
-                            if(args.length == 6) {
-                                //すべてのスロットに属性セット
-                                uuid = getUuid(args[5]);
-                                slotsList.addAll(Arrays.asList(EquipmentSlot.values()));
-                            }else if(args.length == 7) {
-                                uuid = getUuid(args[5]);
-                                slotsList.add(EquipmentSlot.valueOf(args[6].toUpperCase()));
-                            }else{
-                                player.sendMessage(String.format("%s: %s", messenger.getString("MakerInvalidCommand"), "//maker attribute <arg1(String)> <namespace> <arg2(Operation)> <amount(Double)> <uuid> <slot(Equipment)>"));
-                                return true;
-                            }
 
-                            //duplication check
-                            if(maker.meta.get(player.getUniqueId()).getAttributeModifiers().containsKey(Attribute.valueOf(args[2].toUpperCase()))) {
-                                player.sendMessage(String.format("%s", messenger.getString("MakerAlreadyInclude")).replaceAll("<ARGUMENT>", messenger.getString("Attribute")));
-                                return true;
-                            }
-
-                            for(EquipmentSlot slot : slotsList) {
-                                maker.meta.get(player.getUniqueId()).addAttributeModifier(Attribute.valueOf(args[2].toUpperCase()), new AttributeModifier(uuid, args[2], Double.parseDouble(args[4]), AttributeModifier.Operation.valueOf(args[3].toUpperCase()), slot));
-                            }
-                        }catch (IllegalArgumentException e) {
-                            player.sendMessage(String.format("%s: %s", messenger.getString("MakerInvalidCommand"), "//maker attribute <arg1(String)> <namespace> <arg2(Operation)> <amount(Double)> <uuid> <slot(Equipment)>"));
-                            return true;
-                        }catch (NullPointerException e) {
-                            if(maker.meta == null) {
-                                player.sendMessage(messenger.getString("MakerArgumentIsNull").replaceAll("<AUGUEMENT>", "meta"));
-
-                            }
-                            player.sendMessage(messenger.getString("MakerArgumentIsNull").replaceAll("<AUGUEMENT>", "argument"));
-                            return true;
-                        }
+                    }
+                    default -> {
+                        return false;
                     }
                 }
-            }catch (Exception e) {
-                player.sendMessage(messenger.getString("MakerArgumentIsNull"));
-            }
-        }else if(args[0].equalsIgnoreCase("material")) {
-            try {
-            }catch (IllegalArgumentException e) {
-                player.sendMessage(String.format("%s: %s", messenger.getString("MakerInvalidCommand"), "//maker material <arg1(String)>"));
+            }else if(args[0].equalsIgnoreCase("cancel")) {
+
+            }else if(args[0].equalsIgnoreCase("enchanting")) {
+                try {
+                    if(args[1].equalsIgnoreCase("set")) {
+                        Enchantment enchant = Enchantment.getByKey(NamespacedKey.minecraft(args[2].toUpperCase()));
+                        if(maker.enchantments.get(player.getUniqueId()).contains(enchant)) {
+                            throw new AlreadyIncludeException();
+                        }
+                        int level = Integer.parseInt(args[3]);
+                        if(enchant.getMaxLevel() < level) {
+                            if(!(player.hasPermission("Maker.GlobalSetting.Admin.Setting.AllowOverEnchanting")) || !(player.hasPermission("Maker.GlobalSetting.Citizen.Setting.AllowOverEnchanting"))) {
+                                throw new NotAllowPermissionException();
+                            }
+                        }
+
+                        maker.enchantments.get(player.getUniqueId()).add(enchant);
+                        maker.enchantmentLevels.get(player.getUniqueId()).add(level);
+                        player.sendMessage(messenger.getString("MakerSetEnchantment"));
+                        return true;
+                    }else{
+
+                    }
+                } catch (NumberFormatException e) {
+                    player.sendMessage(String.format("[%s] %s: %s", plugin.getName(), messenger.getString("MakerIllegalArgument"), ""));
+                    return true;
+                } catch (IllegalArgumentException e) {
+                    player.sendMessage(String.format(String.format(ChatColor.WHITE + "[%s]" + "%s: %s", plugin.getName(), messenger.getString("MakerInvalidCommand"), "//maker enchanting <arg1(String)> <namespace> <arg2(int)>")));
+                    return true;
+                }catch (NotAllowPermissionException e) {
+                    player.sendMessage(String.format(ChatColor.WHITE + "[%s] %s", plugin.getName(), messenger.getString("PermissionDeny")));
+                    return true;
+                }catch (AlreadyIncludeException e) {
+                    player.sendMessage(String.format(ChatColor.WHITE + "[%s] %s\n[%s] %s\n[%s] %s", plugin.getName(),
+                                    messenger.getString("MakerAlreadyInclude"),
+                                    messenger.getString("Duplication").substring(0, 1).toUpperCase() + messenger.getString("Duplication").substring(1) + " " + messenger.getString("Enchantment")),
+                            messenger.getString("Duplication").substring(0, 1).toUpperCase() + messenger.getString("Duplication").substring(1) + " " + messenger.getString("Enchantment") + " " + messenger.getString("EnchantmentLevel")
+                    );
+                    return true;
+                }
+            }else if(args[0].equalsIgnoreCase("generate")) {
+                ItemStack item = new ItemStack(maker.material.get(player.getUniqueId()));
+                player.getInventory().addItem(item);
+
+                maker.material.put(player.getUniqueId(), null);
+                maker.name.put(player.getUniqueId(), null);
                 return true;
-            }catch (NotAllowPermissionException e) {
-                throw new NotAllowPermissionException(e);
+            }else if(args[0].equalsIgnoreCase("item_flag")) {
+
+            }else if(args[0].equalsIgnoreCase("lore")) {
+
+            }else if(args[0].equalsIgnoreCase("material")) {
+                if(Manager.specialMaterial.contains(Material.valueOf(args[2].toUpperCase()))) {
+                    if(permissionCheck(player, "AdminItems")) {
+                        throw new NotAllowPermissionException();
+                    }
+                }
+                switch(args[1]) {
+                    case "edit" -> {
+
+                    }
+                    case "remove" -> {
+
+                    }
+                    case "set" -> {
+                        maker.material.put(player.getUniqueId(), Material.valueOf(args[2].toUpperCase()));
+                        player.sendMessage(String.format("[%s] %s", plugin.getName(), messenger.getString("MakerSet").replaceAll("<ARGUMENT>", "Material")));
+                    }
+                }
+            }else if(args[0].equalsIgnoreCase("name")) {
+
             }
+        }catch (NotProvideException e) {
+            sender.sendMessage(String.format("[%s] %s", plugin.getName(), messenger.getString("NotProvide")));
+            return true;
         }
-
-
+        catch (NotAllowPermissionException e) {
+            sender.sendMessage(String.format("[%s] %s", plugin.getName(), messenger.getString("PermissionDeny")));
+            return true;
+        }
+        catch (AlreadyIncludeException e) {
+            sender.sendMessage(String.format("[%s] %s", plugin.getName(), messenger.getString("MakerAlreadyInclude").replaceAll("<ARGUMENT>", "Material")));
+            return true;
+        }
+        catch (NullPointerException e) {
+            sender.sendMessage(String.format("[%s] %s", plugin.getName(), messenger.getString("MakerArgumentIsNull").replaceAll("<ARGUMENT>", "")));
+            return true;
+        }catch (IllegalArgumentException e) {
+            sender.sendMessage(String.format(""));
+            return true;
+        }
         return false;
     }
 
@@ -210,7 +228,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                 argument.add("name");
 
                 for (String str : argument) {
-                    if((!player.hasPermission(config.getString("Maker.GlobalSetting.Citizen.Permission." + ManagerArg.valueOf(str.toUpperCase()))))) {
+                    if(permissionCheck(sender, ConfigMenu.valueOf(str.toUpperCase()).toString())) {
                         continue;
                     }
                     if (str.toLowerCase().startsWith(args[0].toLowerCase())) {
@@ -225,7 +243,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                 argument.add("remove");
 
                 if (args[0].equalsIgnoreCase("enchanting")) {
-                    if(tabPermissionCheck(sender, "Enchanting")) {
+                    if(permissionCheck(sender, "Enchanting")) {
                         return null;
                     }
                     for (String str : argument) {
@@ -236,7 +254,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                     return result;
                 }
                 if (args[0].equalsIgnoreCase("attribute")) {
-                    if(tabPermissionCheck(sender, "Attribute")) {
+                    if(permissionCheck(sender, "Attribute")) {
                         return null;
                     }
                     for (String str : argument) {
@@ -247,7 +265,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                     return result;
                 }
                 if (args[0].equalsIgnoreCase("iem_flag")) {
-                    if(tabPermissionCheck(sender, "ItemFlag")) {
+                    if(permissionCheck(sender, "ItemFlag")) {
                         return null;
                     }
                     for (String str : argument) {
@@ -258,7 +276,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                     return result;
                 }
                 if (args[0].equalsIgnoreCase("lore")) {
-                    if(tabPermissionCheck(sender, "Lore")) {
+                    if(permissionCheck(sender, "Lore")) {
                         return null;
                     }
                     for (String str : argument) {
@@ -269,7 +287,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                     return result;
                 }
                 if (args[0].equalsIgnoreCase("material")) {
-                    if(tabPermissionCheck(sender, "AdminItems")) {
+                    if(permissionCheck(sender, "Basic")) {
                         return null;
                     }
                     for (String str : argument) {
@@ -283,7 +301,7 @@ public class MakerCommand extends Manager implements TabExecutor {
             if (args.length == 3) {
                 if (args[0].equalsIgnoreCase("attribute")) {
                     //属性一覧
-                    if(tabPermissionCheck(sender, "Attribute")) {
+                    if(permissionCheck(sender, "Attribute")) {
                         return null;
                     }
                     if(args[1].equalsIgnoreCase("set")){
@@ -314,7 +332,7 @@ public class MakerCommand extends Manager implements TabExecutor {
 
                 if (args[0].equalsIgnoreCase("iem_flag")) {
                     //アイテムフラッグ一覧
-                    if(tabPermissionCheck(sender, "ItemFlag")) {
+                    if(permissionCheck(sender, "ItemFlag")) {
                         return null;
                     }
                     for (ItemFlag flag : ItemFlag.values()) {
@@ -328,36 +346,46 @@ public class MakerCommand extends Manager implements TabExecutor {
                     return result;
                 }
                 if (args[0].equalsIgnoreCase("material")) {
-                    //マテリアル一覧
-                    if(tabPermissionCheck(sender, "AdminItems")) {
+                    if(permissionCheck(sender, "Basic")) {
                         return null;
                     }
-                    for (Material m : Material.values()) {
-                        if(checkSpecialMaterial(m)) {
-                            if(!sender.hasPermission(config.getString("Maker.GlobalSetting.Admin.Permission.All"))) {
-                                if(!sender.hasPermission(config.getString("Maker.GlobalSetting.Admin.Permission.AdminItems"))) {
-                                    continue;
+                    if(args[1].equalsIgnoreCase("set")) {
+                        //マテリアル一覧
+                        for (Material m : Material.values()) {
+                            if(checkSpecialMaterial(m)) {
+                                if(!sender.hasPermission(config.getString("Maker.GlobalSetting.Admin.Permission.All"))) {
+                                    if(!sender.hasPermission(config.getString("Maker.GlobalSetting.Admin.Permission.AdminItems"))) {
+                                        if(!sender.hasPermission(config.getString("item-manager.maker.admin-items.everyone"))) {
+                                            continue;
+                                        }
+                                    }
                                 }
                             }
+                            argument.add(m.name().toLowerCase());
                         }
-                        argument.add(m.name().toLowerCase());
-                    }
-                    for (String str : argument) {
-                        if (str.toLowerCase().startsWith(args[2])) {
-                            result.add(str);
+                        for (String str : argument) {
+                            if (str.toLowerCase().startsWith(args[2])) {
+                                result.add(str);
+                            }
                         }
+
+                    }else{
+                        if(maker.material == null || maker.material.isEmpty()) {
+                            return null;
+                        }
+                        result.add(maker.material.get(player.getUniqueId()).getKey().getKey());
                     }
                     return result;
                 }
                 if (args[0].equalsIgnoreCase("name")) {
-                    if(tabPermissionCheck(sender, "ColorName")) {
+                    if(permissionCheck(sender, "ColorName")) {
                         return null;
                     }
                     return new ArrayList<>(List.of("color"));
                 }
                 if (args[0].equalsIgnoreCase("enchanting")) {
                     //エンチャント一覧
-                    if(tabPermissionCheck(sender, "Enchanting")) {
+                    if(permissionCheck(sender, "Enchanting")) {
                         return null;
                     }
                     for (Enchantment enchantment : Enchantment.values()) {
@@ -373,7 +401,7 @@ public class MakerCommand extends Manager implements TabExecutor {
             }
             if (args.length == 4) {
                 if (args[2].equalsIgnoreCase("color")) {
-                    if(tabPermissionCheck(sender, "ColorName")) {
+                    if(permissionCheck(sender, "ColorName")) {
                         return null;
                     }
                     for (String color : colorList) {
@@ -384,7 +412,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                     return result;
                 }
                 if (args[0].equalsIgnoreCase("enchanting")) {
-                    if(tabPermissionCheck(sender, "Enchanting")) {
+                    if(permissionCheck(sender, "Enchanting")) {
                         return null;
                     }
                     for (int i = 1, l = Enchantment.getByKey(NamespacedKey.minecraft(args[2])).getMaxLevel(); i <= l; i++) {
@@ -393,7 +421,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                     return result;
                 }
                 if(args[0].equalsIgnoreCase("attribute")) {
-                    if(tabPermissionCheck(sender, "Attribute")) {
+                    if(permissionCheck(sender, "Attribute")) {
                         return null;
                     }
                     if(args[1].equalsIgnoreCase("set")) {
@@ -411,7 +439,7 @@ public class MakerCommand extends Manager implements TabExecutor {
                     return result;
                 }
                 if (args[0].equalsIgnoreCase("lore")) {
-                    if(tabPermissionCheck(sender, "ColorName")) {
+                    if(permissionCheck(sender, "ColorName")) {
                         return null;
                     }
                     return new ArrayList<>(List.of("color"));
@@ -419,7 +447,7 @@ public class MakerCommand extends Manager implements TabExecutor {
             }
             if (args.length == 5) {
                 if (args[3].equalsIgnoreCase("color")) {
-                    if(tabPermissionCheck(sender, "ColorName")) {
+                    if(permissionCheck(sender, "ColorName")) {
                         return null;
                     }
                     for (String color : colorList) {
@@ -432,7 +460,7 @@ public class MakerCommand extends Manager implements TabExecutor {
             }
             if(args.length == 6) {
                 if(colorList.contains(args[4])) {
-                    if(tabPermissionCheck(sender, "Attribute")) {
+                    if(permissionCheck(sender, "Attribute")) {
                         return null;
                     }
                     if(args[1].equalsIgnoreCase("set")) {
@@ -453,7 +481,7 @@ public class MakerCommand extends Manager implements TabExecutor {
             }
             if(args.length == 7) {
                 if(args[0].equalsIgnoreCase("attribute")) {
-                    if(tabPermissionCheck(sender, "Attribute")) {
+                    if(permissionCheck(sender, "Attribute")) {
                         return null;
                     }
                     if(args[1].equalsIgnoreCase("set")) {
@@ -477,7 +505,7 @@ public class MakerCommand extends Manager implements TabExecutor {
         return result;
     }
 
-    private boolean tabPermissionCheck(CommandSender sender, String argType) {
+    private boolean permissionCheck(CommandSender sender, String argType) {
         if(sender.hasPermission(config.getString("Maker.GlobalSetting.Admin.Permission.All"))) {
             return false;
         }
